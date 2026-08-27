@@ -1,0 +1,41 @@
+import express from "express";
+import { pool } from "../db.js";
+
+export const router = express.Router();
+
+// accepte deux filtres optionnels et cumulables : ?statut= et ?categorie_id=
+router.get("/", async (req, res) => {
+  // récupère les filtres depuis la query string de l'URL (undefined si absents)
+  const {statut, categorie_id} = req.query
+
+  const { rows } = await pool.query(
+    `SELECT  objet.libelle, objet.poids_kg, objet.etat_arrivee, objet.statut, objet.prix, objet.date_mise_rayon, objet.categorie_id, objet.depot_id, objet.vente_id, objet.prix_paye, categorie.libelle AS categorie 
+    FROM objet 
+    JOIN categorie ON categorie.id = objet.categorie_id  -- relie chaque objet à sa catégorie
+    WHERE objet.statut = COALESCE($1, objet.statut)               -- si $1 est null, la condition devient toujours vraie (pas de filtre)
+    AND objet.categorie_id = COALESCE($2, objet.categorie_id)     -- même principe pour le deuxième filtre
+    ORDER BY objet.id`,
+    [statut, categorie_id] // $1 = statut, $2 = categorie_id — requête paramétrée, jamais de concaténation
+  );
+  res.json(rows); 
+});
+
+router.get("/:id", async (req, res)=>{
+  const { rows } = await pool.query(
+    `SELECT objet.categorie_id, objet.depot_id, categorie.libelle AS categorie, depot.personne_id, personne.nom, personne.prenom
+    FROM objet
+    JOIN categorie ON categorie.id = objet.categorie_id 
+    JOIN depot ON depot.id = objet.depot_id
+    JOIN personne ON personne.id = depot.personne_id
+    WHERE objet.id = $1
+    ORDER BY objet.id`,
+    [req.params.id]
+    );
+    if (rows.length === 0) {
+  return res.status(404).json({ erreur: "Objet introuvable" });
+}
+
+  res.json(rows[0]); 
+}
+)
+
