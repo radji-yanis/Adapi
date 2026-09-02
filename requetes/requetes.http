@@ -1,0 +1,128 @@
+### Catégories - lecture
+GET http://localhost:3000/api/categories
+
+### Objets - liste avec filtres
+GET http://localhost:3000/api/objets
+
+### Objets - filtré par statut
+GET http://localhost:3000/api/objets?statut=en_rayon
+
+### Objets - filtré par catégorie
+GET http://localhost:3000/api/objets?categorie_id=3
+
+### Objets - un objet précis
+GET http://localhost:3000/api/objets/1
+
+### Objets - cas d'erreur, id inexistant (404)
+GET http://localhost:3000/api/objets/9999
+
+### Dépôts - un dépôt précis
+GET http://localhost:3000/api/depots/1
+
+### Dépôts - cas d'erreur, id inexistant (404)
+GET http://localhost:3000/api/depots/9999
+
+### Personnes - création
+POST http://localhost:3000/api/personnes
+Content-Type: application/json
+
+{
+  "nom": "Dupont",
+  "prenom": "Marie",
+  "telephone": "0612345678"
+}
+
+### Personnes - cas d'erreur, champ obligatoire manquant (400)
+POST http://localhost:3000/api/personnes
+Content-Type: application/json
+
+{
+  "prenom": "Marie"
+}
+
+### Dépôts - création
+POST http://localhost:3000/api/depots
+Content-Type: application/json
+
+{
+  "personne_id": 1,
+  "date_depot": "2026-08-27",
+  "type": "boutique"
+}
+
+### Dépôts - cas d'erreur, valeur enum invalide (400)
+POST http://localhost:3000/api/depots
+Content-Type: application/json
+
+{
+  "personne_id": 1,
+  "date_depot": "2026-08-27",
+  "type": "don"
+}
+
+### Dépôts - ajout d'un objet au dépôt
+POST http://localhost:3000/api/depots/1/objets
+Content-Type: application/json
+
+{
+  "libelle": "Jeu de tournevis",
+  "poids_kg": 4.3,
+  "etat_arrivee": "bon_etat",
+  "categorie_id": 7
+}
+
+### Dépôts - ajout d'objet, cas d'erreur champ manquant (400)
+POST http://localhost:3000/api/depots/1/objets
+Content-Type: application/json
+
+{
+  "libelle": "Aspirateur",
+  "categorie_id": 7
+}
+
+### Dépôts - ajout d'objet, cas d'erreur enum invalide (400)
+POST http://localhost:3000/api/depots/1/objets
+Content-Type: application/json
+
+{
+  "libelle": "Aspirateur",
+  "poids_kg": 3.2,
+  "etat_arrivee": "cassé",
+  "categorie_id": 7
+}
+
+### Objets - modification du statut
+PATCH http://localhost:3000/api/objets/1/statut
+Content-Type: application/json
+
+{
+  "statut": "en_rayon"
+}
+
+### Objets - modification du statut avec prix
+PATCH http://localhost:3000/api/objets/1/statut
+Content-Type: application/json
+
+{
+  "statut": "en_rayon",
+  "prix": 15
+}
+
+### Objets - cas d'erreur, statut invalide (400)
+PATCH http://localhost:3000/api/objets/1/statut
+Content-Type: application/json
+
+{
+  "statut": "perdu"
+}
+
+### Objets - cas d'erreur, id inexistant (404)
+PATCH http://localhost:3000/api/objets/9999/statut
+Content-Type: application/json
+
+{
+  "statut": "en_rayon"
+}
+
+### Stats
+GET http://localhost:3000/api/stats

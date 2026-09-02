@@ -20,13 +20,14 @@ router.get("/", async (req, res) => {
   res.json(rows); 
 });
 
+// GET /api/objets/:id - un objet précis, avec sa catégorie, son dépôt et le nom de sa donatrice
 router.get("/:id", async (req, res)=>{
   const { rows } = await pool.query(
     `SELECT objet.categorie_id, objet.depot_id, categorie.libelle AS categorie, depot.personne_id, personne.nom, personne.prenom
     FROM objet
     JOIN categorie ON categorie.id = objet.categorie_id 
-    JOIN depot ON depot.id = objet.depot_id
-    JOIN personne ON personne.id = depot.personne_id
+    JOIN depot ON depot.id = objet.depot_id  -- relie l'objet à son dépôt
+    JOIN personne ON personne.id = depot.personne_id  -- puis le dépôt à sa donatrice
     WHERE objet.id = $1
     ORDER BY objet.id`,
     [req.params.id]
@@ -35,7 +36,33 @@ router.get("/:id", async (req, res)=>{
   return res.status(404).json({ erreur: "Objet introuvable" });
 }
 
-  res.json(rows[0]); 
+  res.json(rows[0]); // un seul objet renvoyé, pas un tableau
 }
 )
+
+router.patch("/:id/statut", async ( req, res ) => {
+    const {statut, prix} = req.body
+    const objetId = req.params.id
+    const STATUS= ['arrive', 'en_reparation', 'en_rayon', 'vendu', 'recycle'];
+
+if (!STATUS.includes(statut )) {
+  return res.status(400).json({
+    erreur: `statut doit valoir : ${STATUS.join(", ")}`
+  });
+}
+    const {rows} = await pool.query(
+      `UPDATE objet
+      SET statut = $2::statut_objet,prix = COALESCE($3, prix),
+      date_mise_rayon = CASE WHEN $2 = 'en_rayon' THEN CURRENT_DATE ELSE date_mise_rayon END
+      WHERE id = $1
+      RETURNING *
+      `,
+      [objetId, statut, prix ?? null]
+    )
+    if (rows.length === 0) {
+    return res.status(404).json({ erreur: "Objet introuvable" });
+  }
+
+  res.json(rows[0]);
+});
 

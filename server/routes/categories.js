@@ -13,12 +13,3 @@ router.get("/", async (req, res) => {
   );
   res.json(rows); // Express répond en JSON, statut 200 par défaut
 });
-
-router.post("/", async (req, res) => {
-  const {libelle} = req.body
-  const { rows } = await pool.query("INSERT INTO categorie (libelle) VALUES($1)", [libelle]);
-  res.json(rows); 
-});
-
-
-

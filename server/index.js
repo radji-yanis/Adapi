@@ -6,6 +6,7 @@ import { router as categoriesRouter } from "./routes/categories.js"; // on renom
 import { router as objetsRouter } from "./routes/objets.js";
 import { router as personnesRouter } from "./routes/personnes.js";
 import { router as depotsRouter } from "./routes/depots.js";
+import { router as statsRouter } from  "./routes/stats.js";
 const app = express();
 app.use(express.json())
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
@@ -14,7 +15,8 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 app.use("/api/categories", categoriesRouter);
 app.use("/api/objets", objetsRouter);
 app.use("/api/personnes", personnesRouter);
-app.use("/api/depots", depotsRouter),
+app.use("/api/depots", depotsRouter);
+app.use("/api/stats", statsRouter)
 
 // démarre le serveur sur le port défini dans .env
 app.listen(process.env.PORT, () => console.log("je suis connecté"));
