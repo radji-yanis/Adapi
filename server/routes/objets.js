@@ -4,55 +4,63 @@ import { pool } from "../db.js";
 export const router = express.Router();
 
 // accepte deux filtres optionnels et cumulables : ?statut= et ?categorie_id=
-router.get("/", async (req, res) => {
+router.get("/", async (req, res, next) => {
   // récupère les filtres depuis la query string de l'URL (undefined si absents)
   const {statut, categorie_id} = req.query
 
-  const { rows } = await pool.query(
-    `SELECT  objet.libelle, objet.poids_kg, objet.etat_arrivee, objet.statut, objet.prix, objet.date_mise_rayon, objet.categorie_id, objet.depot_id, objet.vente_id, objet.prix_paye, categorie.libelle AS categorie 
-    FROM objet 
-    JOIN categorie ON categorie.id = objet.categorie_id  -- relie chaque objet à sa catégorie
-    WHERE objet.statut = COALESCE($1, objet.statut)               -- si $1 est null, la condition devient toujours vraie (pas de filtre)
-    AND objet.categorie_id = COALESCE($2, objet.categorie_id)     -- même principe pour le deuxième filtre
-    ORDER BY objet.id`,
-    [statut, categorie_id] // $1 = statut, $2 = categorie_id — requête paramétrée, jamais de concaténation
-  );
-  res.json(rows); 
+  try {
+    const { rows } = await pool.query(
+      `SELECT  objet.libelle, objet.poids_kg, objet.etat_arrivee, objet.statut, objet.prix, objet.date_mise_rayon, objet.categorie_id, objet.depot_id, objet.vente_id, objet.prix_paye, categorie.libelle AS categorie 
+      FROM objet 
+      JOIN categorie ON categorie.id = objet.categorie_id  -- relie chaque objet à sa catégorie
+      WHERE objet.statut = COALESCE($1, objet.statut)               -- si $1 est null, la condition devient toujours vraie (pas de filtre)
+      AND objet.categorie_id = COALESCE($2, objet.categorie_id)     -- même principe pour le deuxième filtre
+      ORDER BY objet.id`,
+      [statut, categorie_id] // $1 = statut, $2 = categorie_id — requête paramétrée, jamais de concaténation
+    );
+    res.json(rows);
+  } catch (err) {
+    next(err);
+  }
 });
 
 // GET /api/objets/:id - un objet précis, avec sa catégorie, son dépôt et le nom de sa donatrice
-router.get("/:id", async (req, res)=>{
-  const { rows } = await pool.query(
-    `SELECT objet.categorie_id, objet.depot_id, categorie.libelle AS categorie, depot.personne_id, personne.nom, personne.prenom
-    FROM objet
-    JOIN categorie ON categorie.id = objet.categorie_id 
-    JOIN depot ON depot.id = objet.depot_id  -- relie l'objet à son dépôt
-    JOIN personne ON personne.id = depot.personne_id  -- puis le dépôt à sa donatrice
-    WHERE objet.id = $1
-    ORDER BY objet.id`,
-    [req.params.id]
+router.get("/:id", async (req, res, next) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT objet.categorie_id, objet.depot_id, categorie.libelle AS categorie, depot.personne_id, personne.nom, personne.prenom
+      FROM objet
+      JOIN categorie ON categorie.id = objet.categorie_id 
+      JOIN depot ON depot.id = objet.depot_id  -- relie l'objet à son dépôt
+      JOIN personne ON personne.id = depot.personne_id  -- puis le dépôt à sa donatrice
+      WHERE objet.id = $1
+      ORDER BY objet.id`,
+      [req.params.id]
     );
     if (rows.length === 0) {
-  return res.status(404).json({ erreur: "Objet introuvable" });
-}
+      return res.status(404).json({ erreur: "Objet introuvable" });
+    }
+    res.json(rows[0]); // un seul objet renvoyé, pas un tableau
+  } catch (err) {
+    next(err);
+  }
+});
 
-  res.json(rows[0]); // un seul objet renvoyé, pas un tableau
-}
-)
+// PATCH /api/objets/:id/statut - fait évoluer le statut d'un objet
+router.patch("/:id/statut", async (req, res, next) => {
+  const {statut, prix} = req.body
+  const objetId = req.params.id
+  const STATUS = ['arrive', 'en_reparation', 'en_rayon', 'vendu', 'recycle'];
 
-router.patch("/:id/statut", async ( req, res ) => {
-    const {statut, prix} = req.body
-    const objetId = req.params.id
-    const STATUS= ['arrive', 'en_reparation', 'en_rayon', 'vendu', 'recycle'];
-
-if (!STATUS.includes(statut )) {
-  return res.status(400).json({
-    erreur: `statut doit valoir : ${STATUS.join(", ")}`
-  });
-}
-    const {rows} = await pool.query(
+  if (!STATUS.includes(statut)) {
+    return res.status(400).json({
+      erreur: `statut doit valoir : ${STATUS.join(", ")}`
+    });
+  }
+  try {
+    const { rows } = await pool.query(
       `UPDATE objet
-      SET statut = $2::statut_objet,prix = COALESCE($3, prix),
+      SET statut = $2::statut_objet, prix = COALESCE($3, prix),
       date_mise_rayon = CASE WHEN $2 = 'en_rayon' THEN CURRENT_DATE ELSE date_mise_rayon END
       WHERE id = $1
       RETURNING *
@@ -60,9 +68,10 @@ if (!STATUS.includes(statut )) {
       [objetId, statut, prix ?? null]
     )
     if (rows.length === 0) {
-    return res.status(404).json({ erreur: "Objet introuvable" });
+      return res.status(404).json({ erreur: "Objet introuvable" });
+    }
+    res.json(rows[0]);
+  } catch (err) {
+    next(err);
   }
-
-  res.json(rows[0]);
 });
-

@@ -18,50 +18,19 @@ app.use("/api/personnes", personnesRouter);
 app.use("/api/depots", depotsRouter);
 app.use("/api/stats", statsRouter)
 
-// démarre le serveur sur le port défini dans .env
-app.listen(process.env.PORT, () => console.log("je suis connecté"));
 
+ 
 
-// app.get("/api/categories",(req,res)=>{
-//     res.json({libelle:"Mobilier"})
-// })
-
-// app.get("/api/objets",(req,res)=>{
-//     res.json({libelle:"Jeu de tournevis"})
-// })
-
-// app.get("/api/objets/:id"),(req,res)=>{
-//     res.json({id:3})
-// }
-
-// app.get("/api/depots/:id"),(req,res)=>{
-//     res.json({id:9})
-// }
-
-// app.get("/:id",(req,res)=> {
-//     if (Number(req.params.id) === 2) {
-//         res.status(404).send("erreur, je ne veux pas de ce chiffre")
-//     }
-//     res.send("hello world")
-// });
-
-// app.listen(3000,() =>console.log("je suis connecter"))
-
-// import { objets } from "./tp.js";
-
-// app.get("/:id",(req,res) => {
-//     const idObjet = Number(req.params.id)
-//     const found = objets.find((objet) => idObjet === objet.id )
-//     res.json(found)
-// })
-
-
-// app.listen(3000,()=> console.log("je suis connecter"))
 
 
 // ── Le middleware d'erreur ──────────────────────────────────────────
+
+app.use((req, res) => res.status(404).json({ erreur: "Route inconnue" }));
 
 app.use((err, req, res, suite) => {
   console.error(err);                                   // le détail de l'erreur reste ici
   res.status(500).json({ erreur: 'Erreur interne du serveur' });  // le client reçoit un message propre
 });
+
+// démarre le serveur sur le port défini dans .env
+app.listen(process.env.PORT, () => console.log("je suis connecté"));
