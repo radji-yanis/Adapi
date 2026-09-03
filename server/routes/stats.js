@@ -24,8 +24,8 @@ router.get("/", async (req, res, next) => {
     res.json({
       parStatut,
       poidsTotal,
-      poidsDetourne,
-    })
+      poidsDetourne
+    });
   } catch (err) {
     next(err);
   }
